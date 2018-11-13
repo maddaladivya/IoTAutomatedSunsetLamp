@@ -3,7 +3,8 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
-
+/*13.780064,-89.15
+*/
 String ipadd="";
 String pos="";
 String lon="";
@@ -11,7 +12,7 @@ String lat="";
 String rise="";
 String sunset="";
 String tnow="";
-const char* host = "192.168.43.156";
+const char* host = "192.168.43.155";
 String ip(){        //get IP Address
   HTTPClient http;
   String h = "http://api.ipify.org";
@@ -137,25 +138,37 @@ String time_24(String str)
     }
     return t24;
 }
-int minutes(String s)
-{
-  int a = (int)s[3] -'0';
-  a =a*10 + (int)s[4] - '0';
-  //Serial.println(a);
-  return a;
-}
-int hrs(String s)
-{
-  int a = (int)s[0] -48;
-  a =a*10 + (int)s[1] - 48;
-  return a;
-}
+int removeColon(String s) 
+{   
+  int x = (s[0]-'0')*1000+(s[1] -'0')*100+(s[3]-'0')*10+(s[4]-'0');
+  return x;
+} 
+int diff(String s1, String s2) 
+{ 
+  int time1 = removeColon(s1); 
+  int time2 = removeColon(s2); 
+ // Serial.println(time1);
+  //Serial.println(time2);
+  int hourDiff = time2 / 100 - time1 / 100 - 1; 
+  int minDiff = time2 % 100 + (60 - time1 % 100); 
+  if (minDiff >= 60) 
+  { 
+    hourDiff++; 
+    minDiff = minDiff - 60; 
+  }
+  long int h = 60*hourDiff + minDiff;
+ // Serial.print("h");
+  //Serial.println(h);
+  if(h<0)
+    h= -1;
+  return h; 
+} 
 
 void setup()
 {
   Serial.begin(9600);
   Serial.print("Connecting");
-  WiFi.begin("divya", "winteriscoming");  
+  WiFi.begin("Need", "lotus1666");  
   while(WiFi.status() != WL_CONNECTED)
   {
     delay(1000);
@@ -200,6 +213,8 @@ void loop()
               String tim = timings(lat,lon);
               if(tim!="0")
               {
+                  Serial.println(lat);
+                  Serial.println(lon);
                   int ind =tim.indexOf("M");
                   rise = tim.substring(0,ind+1);
                   rise = time_24(rise);
@@ -208,51 +223,47 @@ void loop()
                   Serial.println(rise);
                   Serial.println(sunset);
                   tnow =  gettime();
-                  int x = minutes(tnow);
-                  int y =minutes(sunset);
                   if(tnow!="0")
                   {
+                      Serial.print("Time :");
                       Serial.println(tnow);
-                      Serial.println(hrs(tnow));
-                      Serial.println(hrs(sunset));
-                      if(hrs(tnow) < hrs(sunset))
+                     
+                      int x = diff(tnow.substring(0,5),sunset.substring(0,5));
+                      if(x == -1)
                       {
-                        Serial.println("1");
-                        long long int x = 3600000;
-                        delay(x);
+                        long  u=0;
+                        digitalWrite(D7,HIGH);
+                        if((tnow.substring(0,2)).toInt() >  (rise.substring(0,2)).toInt())
+                        {
+                          u = diff(tnow.substring(0,5),"23:59");
+                         // Serial.println(u);
+                         // Serial.println(diff("00:00",rise.substring(0,5)));
+                          u = u + diff("00:00",rise.substring(0,5))+1;
+                        }
+                        else
+                        {
+                         u = diff(tnow.substring(0,5),rise.substring(0,5));
+                        }
+                        Serial.print("Time Gap in minutes:");
+                        Serial.println(u);
+                        u  = u*60*1000;
+                        delay(u);
+                        digitalWrite(D7,LOW);
+                        
                       }
-                      else if((hrs(tnow) == hrs(sunset)) && (x < y))
+                      else if(x<10)
                       {
-                        Serial.println("2");
-                        delay(600000);
+                        int l = x*60*1000;
+                        delay(l);
+                      }
+                      else if(x < 60)
+                      {
+                        delay(600000);//10 minutes delay
                       }
                       else
-                      {
-                        int f = hrs(tnow);
-                        int g = hrs(rise);
-                        int k = hrs(sunset);
-                        x = minutes(tnow);
-                        y =minutes(rise);
-                        Serial.println(f);
-                        Serial.println(g);
-                        while((f>g) || (f==g && x<=y))
-                        {
-                          Serial.println("Blow");
-                          digitalWrite(D7, HIGH);
-                          if(f<g)
-                          {
-                            delay(3600000);
-                           
-                          }
-                          else
-                          {
-                            delay(600000);
-                          }
-                          tnow = gettime();
-                         
-                        }
-                        digitalWrite(D7,LOW);
-                      }
+                        delay(3600000);
+                      tnow = gettime();
+                      Serial.println();
                   }
                   else
                   {
@@ -274,4 +285,5 @@ void loop()
   {
     Serial.println("No proper wifi connection");
   }
+
 }
