@@ -12,18 +12,19 @@ String rise="";
 String sunset="";
 String tnow="";
 
-String ip(){        //get IP Address
+String ip(){        //For IP Address
   HTTPClient http;
   ipadd="0";
   String h = "http://api.ipify.org";
   http.begin(h);
   int response = http.GET();
-  if(response>0){
+  if(response>0)
+  {
     ipadd = http.getString();
     Serial.println(ipadd);
   }
   return ipadd;
-  }
+}
 
 String coordinates(String a)     //get GeoLocation(Latitude, longitude)
 {
@@ -49,7 +50,7 @@ String coordinates(String a)     //get GeoLocation(Latitude, longitude)
    http.end();
   return ans;
 }
-String timings(String a , String c)             //Get current time
+String timings(String a , String c)             //Get Sunrise and sunset time
 {
    HTTPClient http;
    DynamicJsonBuffer jsonBuffer;
@@ -76,7 +77,7 @@ String timings(String a , String c)             //Get current time
    //Serial.println(ans);
    return ans;
 }
-String gettime()
+String gettime()//Get current time
 {
   HTTPClient http;
   DynamicJsonBuffer jsonBuffer;
@@ -100,7 +101,7 @@ String gettime()
   }
   return ans;
 }
-String time_24(String str) //Changes to 24 hr format
+String time_24(String str) //Changes12hr format  to 24 hr format
 { 
     String t24 ="";
     int i;
@@ -152,8 +153,6 @@ int diff(String s1, String s2)
 { 
   int time1 = removeColon(s1); 
   int time2 = removeColon(s2); 
-  Serial.println(time1);
-  Serial.println(time2);
   int hourDiff = time2 / 100 - time1 / 100 - 1; 
   int minDiff = time2 % 100 + (60 - time1 % 100); 
   if (minDiff >= 60) 
@@ -162,10 +161,10 @@ int diff(String s1, String s2)
     minDiff = minDiff - 60; 
   }
   long int h = 60*hourDiff + minDiff;
-  Serial.print("h");
-  Serial.println(h);
   if(h<0)
     h= -1;
+  //Serial.print("Gap:");
+  //Serial.println(h); 
   return h; 
 } 
 
@@ -173,7 +172,7 @@ void setup()
 {
   Serial.begin(9600);
   Serial.print("Connecting");
-  WiFi.begin("Venkata Vyshnavi’s iPhone", "vyshu150699");   
+  WiFi.begin("Need", "lotus1666");  //Wifi username and password... 
   while(WiFi.status() != WL_CONNECTED) 
   {
     delay(1000);
@@ -181,8 +180,7 @@ void setup()
   }
   Serial.println("Connected!");
   pinMode(D7, OUTPUT);
-  //ipadd = (WiFi.localIP()).toString();
-  //Serial.println(ipadd);
+  //pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() 
@@ -197,6 +195,8 @@ void loop()
           pos = coordinates(ipadd);
           if(pos!="0")
           {
+             // lat=-41.68;
+              //lon= 146.60;
               int ind = pos.indexOf(",");
               Serial.print("Latitude :");
               lat = pos.substring(0,ind);
@@ -216,50 +216,82 @@ void loop()
                   Serial.println(rise);
                   Serial.print("Sunset :");
                   Serial.println(sunset);
-                  //Time
                   tnow =  gettime();
-                  
                   if(tnow!="0")
                   {
-                      Serial.print("Time :");
-                      Serial.println(tnow);
-                     
-                      int x = diff(tnow.substring(0,5),sunset.substring(0,5));
-                      if(x == -1)
-                      {
-                        long  u=0;
-                        digitalWrite(D7,LOW);
-                        if((tnow.substring(0,2)).toInt() >  (rise.substring(0,2)).toInt())
-                        {
-                          u = diff(tnow.substring(0,5),"23:59");
-                          Serial.println(u);
-                          Serial.println(diff("00:00",rise.substring(0,5)));
-                          u = u + diff("00:00",rise.substring(0,5))+1;
+                    Serial.print("Time :");
+                    Serial.println(tnow);
+                    if(diff(rise.substring(0,5),sunset.substring(0,5)) >0)
+                    {
+                  
+                       int x = diff(tnow.substring(0,5),rise.substring(0,5)); //Function return time gap between the 2 time intervals in minutes
+                       int f = diff(tnow.substring(0,5),sunset.substring(0,5));
+                       if(x > 0)
+                       {
+                         //digitalWrite(LED_BUILTIN,LOW);//On the led
+                         digitalWrite(D7,LOW);
+                         Serial.print("Lamp off after minutes");
+                         Serial.println(x);
+                         long j = x*60*1000;
+                         delay(j);
+                         //digitalWrite(LED_BUILTIN,HIGH);//off the led
+                         digitalWrite(D7,HIGH);
+                       }
+                       else
+                       {
+                         if((x <= 0) && (f>=0))
+                         {
+                           //digitalWrite(LED_BUILTIN,HIGH);
+                           digitalWrite(D7,HIGH);
+                           long j = f*60*1000;
+                           delay(j);
+                         }
+                         else
+                         {
+                           //digitalWrite(LED_BUILTIN,LOW);
+                           digitalWrite(D7,LOW);
+                           f = diff(tnow.substring(0,5),"23:59");
+                           long j = (f+2)*60*1000;
+                           delay(j);
+                           //digitalWrite(LED_BUILTIN,HIGH);
+                           digitalWrite(D7,HIGH);
+                          }
                         }
-                        else
+                     }
+                     else
+                     {
+                        int x = diff(tnow.substring(0,5),sunset.substring(0,5));
+                        int f = diff(tnow.substring(0,5),rise.substring(0,5));
+                        if(x <= 0 && (f>=0))
                         {
-                         u = diff(tnow.substring(0,5),rise.substring(0,5));
-                        }
-                        Serial.print("Time Gap in minutes:");
-                        Serial.println(u);
-                        u  = u*60*1000;
-                        delay(u);
-                        digitalWrite(D7,HIGH);
-                        
-                      }
-                      else if(x<10)
-                      {
-                        int l = x*60*1000;
-                        delay(l);
-                      }
-                      else if(x < 60)
-                      {
-                        delay(600000);//10 minutes delay
-                      }
-                      else
-                        delay(3600000);
-                      tnow = gettime();
-                      Serial.println();
+                          //digitalWrite(LED_BUILTIN,LOW);
+                          digitalWrite(D7,LOW);                             
+                              long j = f*60*1000;
+                              delay(j);
+                           //digitalWrite(LED_BUILTIN,HIGH);
+                           digitalWrite(D7,HIGH);
+                         }
+                         else
+                         {
+                           if((x > 0))
+                           {
+                             //digitalWrite(LED_BUILTIN,HIGH);
+                             digitalWrite(D7,HIGH);
+                             long j = x*60*1000;
+                             delay(j);
+                            }
+                            else if( f <0)
+                            {
+                              //digitalWrite(LED_BUILTIN,HIGH);
+                              digitalWrite(D7,HIGH);
+                              f = diff(tnow.substring(0,5),"23:59");
+                              long j = (f+2)*60*1000;
+                              delay(j);
+                               
+                             }
+                           }
+                            
+                         }  
                   }
                   else
                   {
@@ -283,14 +315,6 @@ void loop()
   } 
   else 
   {
-    Serial.println('No proper wifi connection');
+    Serial.println("No proper wifi connection");
   } 
 }
-
-
-
-
-/*
- *  ESP8266WebServer server(80);  //confiuring websever on port 80
- *  server.begin(); //starts the server
- */
