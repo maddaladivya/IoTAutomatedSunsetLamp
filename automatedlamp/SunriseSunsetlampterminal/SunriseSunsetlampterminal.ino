@@ -11,7 +11,8 @@ String lat="";
 String rise="";
 String sunset="";
 String tnow="";
-const char* host = "192.168.43.155";
+const char* host = "192.168.43.156";
+//-41.68,146.60
 String ip(){        //For IP Address
   HTTPClient http;
   ipadd="0";
@@ -187,23 +188,40 @@ void loop()
 {
   if(WiFi.status() == WL_CONNECTED ) 
   {
-      ipadd = ip();
+ /*     ipadd = ip();
       if(ipadd!="0")
-      {
-          Serial.print("IPAddress: ");
-          Serial.println(ipadd);
-          pos = coordinates(ipadd);
+      {*/
+        //  Serial.print("IPAddress: ");
+          //Serial.println(ipadd);
+        /*  pos = coordinates(ipadd);
           if(pos!="0")
-          {
+          {*/
              // lat=-41.68;
               //lon= 146.60;
-              int ind = pos.indexOf(",");
+              WiFiClient client;
+              Serial.println("Connected!");
+              if (client.connect(host, 8080)){
+                while(client.connected()){
+                    if(client.available()){
+                      Serial.println("Give Input");
+                      String pos = client.readStringUntil('\n');
+                      Serial.println(pos);
+                      int ind = pos.indexOf(",");
+                      lat = pos.substring(0,ind);
+                      lon = pos.substring(ind+1, pos.length()-1);
+                      if(lat!=""){
+                        client.stop();
+                        }
+                      }
+                  }
+                }
+              /*int ind = pos.indexOf(",");
               Serial.print("Latitude :");
               lat = pos.substring(0,ind);
               Serial.println(lat);
               Serial.print("Longitude :");
               lon = pos.substring(ind+1, pos.length()-1);
-              Serial.println(lon);
+              Serial.println(lon);*/
               String tim = timings(lat,lon);
               if(tim!="0")
               {
@@ -303,7 +321,7 @@ void loop()
                 Serial.println("Error on sending request to sunrise and sunset api");
               }
           }
-          else
+        /*  else
           {
             Serial.println("Error on sending request to Longitude and latitude api");
           }
@@ -312,7 +330,7 @@ void loop()
       {
         Serial.println("Error on sending request to ipaddress api");
       }
-  } 
+  } */
   else 
   {
     Serial.println("No proper wifi connection");
